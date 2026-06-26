@@ -31,7 +31,7 @@ export async function renderContentFeed(container, policy, getRules) {
     }, 3000);
   }
 
-  function updateContentBox(content) {
+  /*function updateContentBox(content) {
     const box = document.querySelector(`.content-box[data-id="${content.id}"]`);
     if (!box) return;
     const rules = getRules();
@@ -42,7 +42,21 @@ export async function renderContentFeed(container, policy, getRules) {
       badge.textContent = color === "pending" ? "Pending…" : colorLabel(color);
       badge.className = `verdict-badge badge-${color}`;
     }
+  }*/
+ function updateContentBox(content) {
+  const box = document.querySelector(`.content-box[data-id="${content.id}"]`);
+  if (!box) return;
+  const rules = getRules();
+  const color = verdictColor(content.verdict, rules);
+  box.className = `content-box verdict-${color}`;
+  const badge = box.querySelector(".verdict-badge");
+  if (badge) {
+    badge.textContent = colorLabel(color);
+    badge.className = `verdict-badge badge-${color}`;
   }
+  box.style.cursor = "pointer";
+  box.addEventListener("click", () => openVerdictModal(content));
+}
 
   function colorLabel(color) {
     return { green: "Compliant", yellow: "Review needed", red: "Violation", pending: "Pending…" }[color] || "";
