@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:8000";
+const BASE_URL = "http://localhost:7860";
 
 function getToken() {
   return localStorage.getItem("jury_token");
