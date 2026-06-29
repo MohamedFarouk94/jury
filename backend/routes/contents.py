@@ -1,4 +1,5 @@
 import json
+from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status
 from sqlalchemy.orm import Session
 
@@ -6,6 +7,7 @@ from models.database import get_db
 from models.models import Content, Policy, Rule, User
 from schemas.schemas import ContentCreate, ContentOut
 from utils.auth import get_current_user
+from utils.quota import check_and_increment_quota
 from core.chain import run_moderation_chain
 
 router = APIRouter(prefix="/contents", tags=["Contents"])
@@ -18,13 +20,11 @@ def _run_verdict(content_id: int, rules: list[dict], text: str, db: Session):
     except Exception as e:
         verdict = {"error": str(e), "details": "Moderation chain failed."}
 
-    print(verdict)
-    print()
-    
     content = db.query(Content).filter(Content.id == content_id).first()
     if content:
         content.verdict = json.dumps(verdict)
         db.commit()
+    db.close()
 
 
 def _serialize(content: Content) -> dict:
@@ -51,18 +51,33 @@ def check_content(
     if not policy:
         raise HTTPException(status_code=404, detail="Policy not found.")
 
-    rules = db.query(Rule).filter(Rule.policy_id == policy.id).all()
+    rules = (
+        db.query(Rule)
+        .filter(Rule.policy_id == policy.id)
+        .order_by(Rule.policy_rule_index)
+        .all()
+    )
     if not rules:
-        raise HTTPException(status_code=400, detail="Policy has no rules to evaluate against.")
+        raise HTTPException(status_code=400, detail="This policy has no rules yet. Add at least one rule before checking content.")
+
+    # Enforce daily quota (exempt users bypass this)
+    check_and_increment_quota(current_user, db)
 
     content = Content(text=payload.text, policy_id=policy.id)
     db.add(content)
     db.commit()
     db.refresh(content)
 
-    rules_data = [{"id": str(r.id), "name": r.name, "description": r.description} for r in rules]
+    # Use policy_rule_index as the rule id sent to the LLM
+    rules_data = [
+        {
+            "id": str(r.policy_rule_index),
+            "name": r.name,
+            "description": r.description,
+        }
+        for r in rules
+    ]
 
-    # Use a new DB session for the background task to avoid session conflicts
     from models.database import SessionLocal
     bg_db = SessionLocal()
     background_tasks.add_task(_run_verdict, content.id, rules_data, content.text, bg_db)

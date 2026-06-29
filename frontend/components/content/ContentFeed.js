@@ -4,7 +4,6 @@ import { verdictColor, violationLabel } from "../../utils/verdict.js";
 export async function renderContentFeed(container, policy, getRules) {
   let contents = await fetchContents(policy.id);
 
-  // Poll pending contents every 3 seconds
   let pollInterval = null;
 
   function hasPending() {
@@ -31,7 +30,7 @@ export async function renderContentFeed(container, policy, getRules) {
     }, 3000);
   }
 
-  /*function updateContentBox(content) {
+  function updateContentBox(content) {
     const box = document.querySelector(`.content-box[data-id="${content.id}"]`);
     if (!box) return;
     const rules = getRules();
@@ -39,24 +38,13 @@ export async function renderContentFeed(container, policy, getRules) {
     box.className = `content-box verdict-${color}`;
     const badge = box.querySelector(".verdict-badge");
     if (badge) {
-      badge.textContent = color === "pending" ? "Pending…" : colorLabel(color);
+      badge.textContent = colorLabel(color);
       badge.className = `verdict-badge badge-${color}`;
     }
-  }*/
- function updateContentBox(content) {
-  const box = document.querySelector(`.content-box[data-id="${content.id}"]`);
-  if (!box) return;
-  const rules = getRules();
-  const color = verdictColor(content.verdict, rules);
-  box.className = `content-box verdict-${color}`;
-  const badge = box.querySelector(".verdict-badge");
-  if (badge) {
-    badge.textContent = colorLabel(color);
-    badge.className = `verdict-badge badge-${color}`;
+    box.style.cursor = "pointer";
+    box.addEventListener("click", () => openVerdictModal(content));
   }
-  box.style.cursor = "pointer";
-  box.addEventListener("click", () => openVerdictModal(content));
-}
+ 
 
   function colorLabel(color) {
     return { green: "Compliant", yellow: "Review needed", red: "Violation", pending: "Pending…" }[color] || "";
@@ -72,7 +60,8 @@ export async function renderContentFeed(container, policy, getRules) {
 
     const ruleRows = rules
       .map((r) => {
-        const level = verdict[String(r.id)] ?? 0;
+        // Verdict keys are policy_rule_index (1, 2, 3...) as strings
+        const level = verdict[String(r.policy_rule_index)] ?? 0;
         const color = level === 0 ? "green" : level === 1 ? "yellow" : "red";
         return `
         <div class="verdict-row">
@@ -125,7 +114,20 @@ export async function renderContentFeed(container, policy, getRules) {
     return div;
   }
 
+  function updateSendButton() {
+    const btn = container.querySelector("#send-content-btn");
+    const hint = container.querySelector("#no-rules-hint");
+    if (!btn) return;
+    const rules = getRules();
+    const hasRules = rules.length > 0;
+    btn.disabled = !hasRules;
+    if (hint) hint.classList.toggle("hidden", hasRules);
+  }
+
   function render() {
+    const rules = getRules();
+    const hasRules = rules.length > 0;
+
     container.innerHTML = `
       <div class="feed-header">
         <h3>${escapeHtml(policy.name)}</h3>
@@ -133,11 +135,14 @@ export async function renderContentFeed(container, policy, getRules) {
       </div>
       <div class="content-list" id="content-list"></div>
       <div class="content-input-area">
-        <textarea id="content-input" placeholder="Paste content to check against this policy…" rows="3"></textarea>
+        <textarea id="content-input" placeholder="Paste content to check against this policy…" rows="3" ${!hasRules ? "disabled" : ""}></textarea>
         <div class="input-row">
           <p id="feed-error" class="form-error hidden"></p>
-          <button class="btn btn-primary" id="send-content-btn">Check content</button>
+          <button class="btn btn-primary" id="send-content-btn" ${!hasRules ? "disabled" : ""}>Check content</button>
         </div>
+        <p id="no-rules-hint" class="form-error ${hasRules ? "hidden" : ""}">
+          Add at least one rule to this policy before checking content.
+        </p>
       </div>`;
 
     const list = container.querySelector("#content-list");
@@ -155,6 +160,14 @@ export async function renderContentFeed(container, policy, getRules) {
         errEl.classList.remove("hidden");
         return;
       }
+
+      // Guard: re-check rules in case they were all deleted after render
+      if (getRules().length === 0) {
+        errEl.textContent = "Add at least one rule before checking content.";
+        errEl.classList.remove("hidden");
+        return;
+      }
+
       errEl.classList.add("hidden");
       input.disabled = true;
       container.querySelector("#send-content-btn").disabled = true;
@@ -172,17 +185,20 @@ export async function renderContentFeed(container, policy, getRules) {
         errEl.classList.remove("hidden");
       } finally {
         input.disabled = false;
-        container.querySelector("#send-content-btn").disabled = false;
+        updateSendButton();
       }
     });
   }
 
   render();
 
-  // Return cleanup so we can stop polling when switching policies
-  return () => {
-    if (pollInterval) clearInterval(pollInterval);
-    pollInterval = null;
+  // Expose so RulesPanel can call this when rules change
+  return {
+    cleanup: () => {
+      if (pollInterval) clearInterval(pollInterval);
+      pollInterval = null;
+    },
+    onRulesChanged: updateSendButton,
   };
 }
 

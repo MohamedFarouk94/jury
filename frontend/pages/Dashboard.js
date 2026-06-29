@@ -1,5 +1,4 @@
-import { logout } from "../services/api.js";
-import { fetchPolicy } from "../services/api.js";
+import { logout, fetchPolicy } from "../services/api.js";
 import { renderPoliciesSidebar } from "../components/policies/PoliciesSidebar.js";
 import { renderRulesPanel } from "../components/policies/RulesPanel.js";
 import { renderContentFeed } from "../components/content/ContentFeed.js";
@@ -18,14 +17,12 @@ export async function renderDashboard(onLogout) {
 
       <div class="dashboard-body">
         <aside class="sidebar" id="sidebar"></aside>
-
         <main class="main-area" id="main-area">
           <div class="empty-state">
             <div class="empty-icon">📋</div>
             <p>Select or create a policy to get started.</p>
           </div>
         </main>
-
         <aside class="rules-panel" id="rules-panel">
           <div class="empty-state small">
             <p>Select a policy to see its rules.</p>
@@ -39,13 +36,13 @@ export async function renderDashboard(onLogout) {
     onLogout();
   });
 
-  let cleanupFeed = null;
+  let feedHandle = null;
 
   async function onSelectPolicy(policyId) {
     const mainArea = document.getElementById("main-area");
     const rulesPanel = document.getElementById("rules-panel");
 
-    if (cleanupFeed) { cleanupFeed(); cleanupFeed = null; }
+    if (feedHandle) { feedHandle.cleanup(); feedHandle = null; }
 
     if (!policyId) {
       mainArea.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>Select or create a policy to get started.</p></div>`;
@@ -59,15 +56,54 @@ export async function renderDashboard(onLogout) {
     try {
       const policy = await fetchPolicy(policyId);
 
-      // Render rules panel and get a live getter for current rules
-      const getRules = renderRulesPanel(rulesPanel, policy);
+      // Render content feed first to get onRulesChanged callback
+      feedHandle = await renderContentFeed(mainArea, policy, getRules);
 
-      // Render content feed, passing getRules so it can compute colors with latest rules
-      cleanupFeed = await renderContentFeed(mainArea, policy, getRules);
+      // Render rules panel, passing onRulesChanged so the feed button updates
+      renderRulesPanel(rulesPanel, policy, feedHandle.onRulesChanged);
     } catch (err) {
       mainArea.innerHTML = `<div class="error-state">Failed to load policy: ${err.message}</div>`;
     }
   }
 
-  await renderPoliciesSidebar(document.getElementById("sidebar"), onSelectPolicy);
+  // getRules is set by renderRulesPanel; placeholder until then
+  let getRules = () => [];
+
+  // Wrap renderRulesPanel to capture its getRules return
+  const origRenderRulesPanel = renderRulesPanel;
+  const _renderRulesPanel = (container, policy, onRulesChanged) => {
+    getRules = origRenderRulesPanel(container, policy, onRulesChanged);
+  };
+
+  // Patch onSelectPolicy to use the wrapper
+  async function onSelectPolicyPatched(policyId) {
+    const mainArea = document.getElementById("main-area");
+    const rulesPanel = document.getElementById("rules-panel");
+
+    if (feedHandle) { feedHandle.cleanup(); feedHandle = null; }
+    getRules = () => [];
+
+    if (!policyId) {
+      mainArea.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>Select or create a policy to get started.</p></div>`;
+      rulesPanel.innerHTML = `<div class="empty-state small"><p>Select a policy to see its rules.</p></div>`;
+      return;
+    }
+
+    mainArea.innerHTML = `<div class="loading">Loading…</div>`;
+    rulesPanel.innerHTML = `<div class="loading">Loading…</div>`;
+
+    try {
+      const policy = await fetchPolicy(policyId);
+
+      // Render feed with a getter that always reads current getRules
+      feedHandle = await renderContentFeed(mainArea, policy, () => getRules());
+
+      // Render rules panel; its return value is the live rules getter
+      getRules = renderRulesPanel(rulesPanel, policy, feedHandle.onRulesChanged);
+    } catch (err) {
+      mainArea.innerHTML = `<div class="error-state">Failed to load policy: ${err.message}</div>`;
+    }
+  }
+
+  await renderPoliciesSidebar(document.getElementById("sidebar"), onSelectPolicyPatched);
 }

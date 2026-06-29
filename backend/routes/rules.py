@@ -16,6 +16,24 @@ def get_owned_policy(policy_id: int, db: Session, user: User) -> Policy:
     return policy
 
 
+def check_name_conflict(policy_id: int, name: str, db: Session, exclude_rule_id: int = None):
+    """Raise 409 if a rule with this name already exists in the policy."""
+    query = db.query(Rule).filter(Rule.policy_id == policy_id, Rule.name == name)
+    if exclude_rule_id:
+        query = query.filter(Rule.id != exclude_rule_id)
+    if query.first():
+        raise HTTPException(
+            status_code=409,
+            detail=f"A rule named '{name}' already exists in this policy."
+        )
+
+
+def next_policy_rule_index(policy_id: int, db: Session) -> int:
+    """Return the next available 1-based index for a rule within a policy."""
+    max_index = db.query(Rule).filter(Rule.policy_id == policy_id).count()
+    return max_index + 1
+
+
 @router.post("/", response_model=RuleOut, status_code=status.HTTP_201_CREATED)
 def add_rule(
     policy_id: int,
@@ -24,7 +42,14 @@ def add_rule(
     current_user: User = Depends(get_current_user),
 ):
     get_owned_policy(policy_id, db, current_user)
-    rule = Rule(name=payload.name, description=payload.description, policy_id=policy_id)
+    check_name_conflict(policy_id, payload.name, db)
+
+    rule = Rule(
+        name=payload.name,
+        description=payload.description,
+        policy_id=policy_id,
+        policy_rule_index=next_policy_rule_index(policy_id, db),
+    )
     db.add(rule)
     db.commit()
     db.refresh(rule)
@@ -44,7 +69,8 @@ def edit_rule(
     if not rule:
         raise HTTPException(status_code=404, detail="Rule not found.")
 
-    if payload.name is not None:
+    if payload.name is not None and payload.name != rule.name:
+        check_name_conflict(policy_id, payload.name, db, exclude_rule_id=rule_id)
         rule.name = payload.name
     if payload.description is not None:
         rule.description = payload.description
@@ -65,5 +91,18 @@ def delete_rule(
     rule = db.query(Rule).filter(Rule.id == rule_id, Rule.policy_id == policy_id).first()
     if not rule:
         raise HTTPException(status_code=404, detail="Rule not found.")
+
+    deleted_index = rule.policy_rule_index
     db.delete(rule)
+
+    # Re-sequence remaining rules so indices stay contiguous
+    remaining = (
+        db.query(Rule)
+        .filter(Rule.policy_id == policy_id, Rule.policy_rule_index > deleted_index)
+        .order_by(Rule.policy_rule_index)
+        .all()
+    )
+    for r in remaining:
+        r.policy_rule_index -= 1
+
     db.commit()

@@ -1,6 +1,6 @@
 import { addRule, editRule, deleteRule } from "../../services/api.js";
 
-export function renderRulesPanel(container, policy) {
+export function renderRulesPanel(container, policy, onRulesChanged = () => {}) {
   let rules = [...(policy.rules || [])];
 
   function render() {
@@ -26,8 +26,7 @@ export function renderRulesPanel(container, policy) {
           rules.length === 0
             ? `<li class="empty-hint">No rules yet. Add one above.</li>`
             : rules
-                .map(
-                  (r) => `
+                .map((r) => `
           <li class="rule-item" data-id="${r.id}">
             <div class="rule-body">
               <strong>${escapeHtml(r.name)}</strong>
@@ -37,8 +36,7 @@ export function renderRulesPanel(container, policy) {
               <button class="btn-icon edit-rule-btn" data-id="${r.id}" title="Edit">✏️</button>
               <button class="btn-icon delete-rule-btn" data-id="${r.id}" title="Delete">🗑</button>
             </div>
-          </li>`
-                )
+          </li>`)
                 .join("")
         }
       </ul>
@@ -81,6 +79,7 @@ export function renderRulesPanel(container, policy) {
           rules.push(created);
         }
         render();
+        onRulesChanged();
       } catch (err) {
         errEl.textContent = err.message;
         errEl.classList.remove("hidden");
@@ -100,14 +99,17 @@ export function renderRulesPanel(container, policy) {
         if (!confirm("Delete this rule?")) return;
         await deleteRule(policy.id, id);
         rules = rules.filter((r) => r.id !== id);
+        // Re-sequence local policy_rule_index to stay in sync with backend
+        rules.forEach((r, i) => { r.policy_rule_index = i + 1; });
         render();
+        onRulesChanged();
       });
     });
   }
 
   render();
 
-  // Return a function so content panel can get current rules for verdict colors
+  // Return a live getter for current rules
   return () => rules;
 }
 
