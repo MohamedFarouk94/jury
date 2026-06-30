@@ -44,6 +44,7 @@ class RuleUpdate(BaseModel):
 
 class RuleOut(BaseModel):
     id: int
+    policy_rule_index: int
     name: str
     description: str
     policy_id: int
