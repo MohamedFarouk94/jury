@@ -8,8 +8,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 RUN useradd -m -u 1000 user && \
-    mkdir -p /data && \
-    chown -R user:user /data
+    mkdir -p /app/data && \
+    chown -R user:user /app/data && \
+    chown -R user:user /app
 
 USER user
 

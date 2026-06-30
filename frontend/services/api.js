@@ -1,4 +1,5 @@
-const BASE_URL = "http://localhost:7860";
+// const BASE_URL = "http://localhost:7860";
+const BASE_URL = "https://mfarouk-jury-backend.hf.space";
 
 function getToken() {
   return localStorage.getItem("jury_token");
