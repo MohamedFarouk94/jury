@@ -7,10 +7,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Create non-root user and a writable directory for the SQLite database
 RUN useradd -m -u 1000 user && \
-    mkdir -p /app/data && \
-    chown -R user:user /app/data
+    mkdir -p /data && \
+    chown -R user:user /data
 
 USER user
 
