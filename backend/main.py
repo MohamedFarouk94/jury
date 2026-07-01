@@ -34,11 +34,14 @@ app.add_middleware(
 )
 
 # ── Routers ───────────────────────────────────────────────────────────────────
-app.include_router(auth_router)
-app.include_router(policies_router)
-app.include_router(rules_router)
-app.include_router(contents_router)
-
+# app.include_router(auth_router)
+# app.include_router(policies_router)
+# app.include_router(rules_router)
+# app.include_router(contents_router)
+app.include_router(auth_router, prefix="/api")
+app.include_router(policies_router, prefix="/api")
+app.include_router(rules_router, prefix="/api")
+app.include_router(contents_router, prefix="/api")
 
 @app.get("/", tags=["Health"])
 def health_check():
