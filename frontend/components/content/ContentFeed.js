@@ -116,11 +116,13 @@ export async function renderContentFeed(container, policy, getRules) {
 
   function updateSendButton() {
     const btn = container.querySelector("#send-content-btn");
+    const input = container.querySelector("#content-input");
     const hint = container.querySelector("#no-rules-hint");
     if (!btn) return;
     const rules = getRules();
     const hasRules = rules.length > 0;
     btn.disabled = !hasRules;
+    if (input) input.disabled = !hasRules;
     if (hint) hint.classList.toggle("hidden", hasRules);
   }
 
