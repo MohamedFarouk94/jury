@@ -1,4 +1,5 @@
 import { login, signup } from "../../services/api.js";
+import { renderInfoFooter } from "../shared/InfoModals.js";
 
 export function renderAuthPage(onSuccess) {
   const app = document.getElementById("app");
@@ -13,6 +14,7 @@ export function renderAuthPage(onSuccess) {
         <span class="logo-icon">⚖️</span>
         <h1>Jury</h1>
         <p class="auth-tagline">AI-powered content moderation</p>
+        <p class="auth-blurb">Set up rules, submit content, and get instant AI-reviewed verdicts.</p>
       </div>
 
       <div class="auth-tabs">
@@ -44,10 +46,13 @@ export function renderAuthPage(onSuccess) {
         </label>
         <button type="submit" class="btn btn-primary btn-full">Create account</button>
       </form>
+
+      <div class="info-footer" id="info-footer"></div>
     </div>
   `;
 
   app.appendChild(container);
+  renderInfoFooter(container.querySelector("#info-footer"));
 
   const tabs = container.querySelectorAll(".tab-btn");
   const loginForm = container.querySelector("#login-form");

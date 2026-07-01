@@ -2,6 +2,7 @@ import { logout, fetchPolicy } from "../services/api.js";
 import { renderPoliciesSidebar } from "../components/policies/PoliciesSidebar.js";
 import { renderRulesPanel } from "../components/policies/RulesPanel.js";
 import { renderContentFeed } from "../components/content/ContentFeed.js";
+import { renderInfoFooter } from "../components/shared/InfoModals.js";
 
 export async function renderDashboard(onLogout) {
   const app = document.getElementById("app");
@@ -12,7 +13,10 @@ export async function renderDashboard(onLogout) {
           <span class="logo-icon">⚖️</span>
           <span class="brand-name">Jury</span>
         </div>
-        <button class="btn btn-ghost btn-sm" id="logout-btn">Log out</button>
+        <div class="topbar-right">
+          <div class="info-footer info-footer-inline" id="topbar-info-footer"></div>
+          <button class="btn btn-ghost btn-sm" id="logout-btn">Log out</button>
+        </div>
       </header>
       <div class="dashboard-body">
         <aside class="sidebar" id="sidebar"></aside>
@@ -34,6 +38,8 @@ export async function renderDashboard(onLogout) {
     logout();
     onLogout();
   });
+
+  renderInfoFooter(document.getElementById("topbar-info-footer"));
 
   let feedHandle = null;
 
