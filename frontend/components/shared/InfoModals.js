@@ -37,7 +37,7 @@ export function openAboutModal() {
     `
     <p class="about-lead">
       Jury is an AI-powered content moderation tool. You define <strong>policies</strong>
-      made up of custom <strong>rules</strong>, submit content for review, and an LLM
+      made up of custom <strong>rules</strong>, submit content for review, and an AI model
       returns a structured verdict for every rule — automatically, every time.
     </p>
 
