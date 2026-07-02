@@ -118,6 +118,7 @@ label { display: flex; flex-direction: column; gap: .35rem; font-size: .85rem; f
   border-bottom: 1px solid var(--border); flex-shrink: 0;
 }
 .topbar-brand { display: flex; align-items: center; gap: .5rem; }
+.topbar-right { display: flex; align-items: center; gap: 1rem; }
 .brand-name   { font-weight: 700; font-size: .95rem; letter-spacing: -.25px; }
 
 .dashboard-body { display: flex; flex: 1; overflow: hidden; }
@@ -249,6 +250,31 @@ label { display: flex; flex-direction: column; gap: .35rem; font-size: .85rem; f
 
 .verdict-details { font-size: .85rem; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: .85rem; }
 .verdict-details strong { color: var(--text); }
+
+/* ── About / Contact modals ────────────────────────────────────────────────── */
+.about-lead { color: var(--text-muted); font-size: .875rem; line-height: 1.6; }
+
+.about-steps { display: flex; flex-direction: column; gap: .85rem; }
+.about-step { display: flex; gap: .75rem; align-items: flex-start; }
+.about-step-num {
+  flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent); color: #fff; font-size: .75rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.about-step strong { font-size: .85rem; color: var(--text); display: block; }
+.about-step p { font-size: .8rem; margin-top: .15rem; }
+
+.about-footer-note { font-size: .75rem; text-align: center; padding-top: .5rem; border-top: 1px solid var(--border); }
+
+.contact-row { display: flex; align-items: center; justify-content: center; gap: .75rem; flex-wrap: wrap; }
+.contact-icon-link {
+  display: flex; align-items: center; justify-content: center;
+  width: 42px; height: 42px; border-radius: 50%;
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text-muted); transition: color .15s, border-color .15s, transform .15s;
+}
+.contact-icon-link svg { width: 19px; height: 19px; }
+.contact-icon-link:hover { color: var(--accent-h); border-color: var(--accent); transform: translateY(-2px); }
 
 /* ── Empty / loading states ─────────────────────────────────────────────────── */
 .empty-state {

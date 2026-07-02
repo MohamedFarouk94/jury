@@ -44,6 +44,9 @@ export function renderAuthPage(onSuccess) {
         <label>Password
           <input type="password" name="password" placeholder="••••••••" required minlength="8" />
         </label>
+        <label>Confirm password
+          <input type="password" name="confirmPassword" placeholder="••••••••" required minlength="8" />
+        </label>
         <button type="submit" class="btn btn-primary btn-full">Create account</button>
       </form>
 
@@ -96,9 +99,15 @@ export function renderAuthPage(onSuccess) {
     e.preventDefault();
     clearError();
     const fd = new FormData(signupForm);
+    const password = fd.get("password");
+    const confirmPassword = fd.get("confirmPassword");
+    if (password !== confirmPassword) {
+      showError("Passwords do not match.");
+      return;
+    }
     try {
-      await signup(fd.get("username"), fd.get("email"), fd.get("password"));
-      await login(fd.get("username"), fd.get("password"));
+      await signup(fd.get("username"), fd.get("email"), password);
+      await login(fd.get("username"), password);
       onSuccess();
     } catch (err) {
       showError(err.message);
