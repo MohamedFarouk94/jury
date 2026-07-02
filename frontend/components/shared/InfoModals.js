@@ -60,7 +60,7 @@ export function openAboutModal() {
         <span class="about-step-num">3</span>
         <div>
           <strong>Submit content, get verdicts</strong>
-          <p>Each rule comes back as no violation, possible violation, or clear violation — color-coded so you can scan results at a glance.</p>
+          <p>Each rule comes back as no violation, possible violation, or clear violation.</p>
         </div>
       </div>
     </div>
@@ -93,9 +93,9 @@ export function openContactModal() {
   openModal(
     "Get in touch",
     `
-    <p class="about-lead">For business, questions, feedback, or even general discussion, reach out anywhere below.</p>
+    <p class="about-lead">For business, questions, or even general discussion, reach out anywhere below.</p>
     <div class="contact-row">${rows}</div>
-    <p class="about-footer-note">Don't hesitate to contact me!.</p>
+    <p class="about-footer-note">Don't hesitate to contact me!</p>
     `,
     "contact-modal"
   );
