@@ -9,16 +9,19 @@ export async function renderDashboard(onLogout) {
   app.innerHTML = `
     <div class="dashboard">
       <header class="topbar">
+        <button class="mobile-toggle" id="sidebar-toggle" aria-label="Toggle policies">☰</button>
         <div class="topbar-brand">
           <span class="logo-icon">⚖️</span>
           <span class="brand-name">Jury</span>
         </div>
         <div class="topbar-right">
+          <button class="mobile-toggle" id="rules-toggle" aria-label="Toggle rules">📋</button>
           <div class="info-footer info-footer-inline" id="topbar-info-footer"></div>
           <button class="btn btn-ghost btn-sm" id="logout-btn">Log out</button>
         </div>
       </header>
       <div class="dashboard-body">
+        <div class="panel-backdrop" id="panel-backdrop"></div>
         <aside class="sidebar" id="sidebar"></aside>
         <main class="main-area" id="main-area">
           <div class="empty-state">
@@ -41,11 +44,46 @@ export async function renderDashboard(onLogout) {
 
   renderInfoFooter(document.getElementById("topbar-info-footer"));
 
+  // ── Mobile drawer toggles ──────────────────────────────────────────────────
+  const sidebarEl = document.getElementById("sidebar");
+  const rulesPanelEl = document.getElementById("rules-panel");
+  const backdrop = document.getElementById("panel-backdrop");
+  const sidebarToggleBtn = document.getElementById("sidebar-toggle");
+  const rulesToggleBtn = document.getElementById("rules-toggle");
+
+  function closePanels() {
+    sidebarEl.classList.remove("open");
+    rulesPanelEl.classList.remove("open");
+    backdrop.classList.remove("visible");
+  }
+
+  sidebarToggleBtn.addEventListener("click", () => {
+    const willOpen = !sidebarEl.classList.contains("open");
+    closePanels();
+    if (willOpen) {
+      sidebarEl.classList.add("open");
+      backdrop.classList.add("visible");
+    }
+  });
+
+  rulesToggleBtn.addEventListener("click", () => {
+    const willOpen = !rulesPanelEl.classList.contains("open");
+    closePanels();
+    if (willOpen) {
+      rulesPanelEl.classList.add("open");
+      backdrop.classList.add("visible");
+    }
+  });
+
+  backdrop.addEventListener("click", closePanels);
+
   let feedHandle = null;
 
   async function onSelectPolicy(policyId) {
     const mainArea = document.getElementById("main-area");
     const rulesPanel = document.getElementById("rules-panel");
+
+    closePanels(); // auto-close drawers on mobile once a policy is picked
 
     if (feedHandle) { feedHandle.cleanup(); feedHandle = null; }
 

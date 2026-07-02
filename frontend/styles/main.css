@@ -291,3 +291,49 @@ label { display: flex; flex-direction: column; gap: .35rem; font-size: .85rem; f
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+/* ── Mobile ─────────────────────────────────────────────────────────────────── */
+.mobile-toggle {
+  display: none; background: none; border: none; color: var(--text);
+  font-size: 1.2rem; cursor: pointer; padding: .3rem .4rem; border-radius: 4px;
+  line-height: 1;
+}
+.mobile-toggle:hover { background: var(--surface-2); }
+
+.panel-backdrop {
+  display: none; position: fixed; top: 52px; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,.55); z-index: 40;
+}
+.panel-backdrop.visible { display: block; }
+
+@media (max-width: 768px) {
+  .mobile-toggle { display: flex; align-items: center; justify-content: center; }
+
+  .topbar { padding: 0 .75rem; }
+  .topbar-right { gap: .5rem; }
+  .brand-name { display: none; } /* logo icon alone is enough on small screens */
+  .info-footer-inline .info-link { font-size: .72rem; }
+
+  .dashboard-body { position: relative; overflow: visible; }
+
+  .sidebar, .rules-panel {
+    position: fixed; top: 52px; bottom: 0; z-index: 50;
+    width: 82vw; max-width: 300px;
+    transition: transform .22s ease;
+    box-shadow: 0 0 24px rgba(0,0,0,.5);
+  }
+  .sidebar { left: 0; transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+
+  .rules-panel { right: 0; transform: translateX(100%); }
+  .rules-panel.open { transform: translateX(0); }
+
+  .main-area { width: 100%; }
+
+  .content-box { min-width: unset; max-width: 90%; }
+
+  .auth-box { padding: 2rem 1.25rem; margin: 0 1rem; }
+  .auth-container { padding: 1rem; }
+
+  .modal { width: 94%; max-height: 85vh; }
+}
