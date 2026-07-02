@@ -46,7 +46,7 @@ export function openAboutModal() {
         <span class="about-step-num">1</span>
         <div>
           <strong>Create a policy</strong>
-          <p>A named container for the guidelines you want to enforce — e.g. "Community Comments" or "Marketplace Listings".</p>
+          <p>A named container for the guidelines you want to enforce.</p>
         </div>
       </div>
       <div class="about-step">
@@ -93,7 +93,7 @@ export function openContactModal() {
   openModal(
     "Get in touch",
     `
-    <p class="about-lead">For business, questions, feedback, reach out anywhere below.</p>
+    <p class="about-lead">For business, questions, feedback, or even general discussion, reach out anywhere below.</p>
     <div class="contact-row">${rows}</div>
     <p class="about-footer-note">Don't hesitate to contact me!.</p>
     `,
