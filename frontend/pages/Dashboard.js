@@ -17,8 +17,8 @@ export async function renderDashboard(onLogout) {
           <span class="brand-name">Jury</span>
         </div>
         <div class="topbar-right">
-          ${username ? `<span class="username-badge" title="Logged in as ${username}">@${username}</span>` : ""}
           <div class="info-footer info-footer-inline" id="topbar-info-footer"></div>
+          ${username ? `<span class="username-badge" title="Logged in as ${username}">@${username}</span>` : ""}
           <button class="btn btn-ghost btn-sm" id="logout-btn">Log out</button>
         </div>
       </header>

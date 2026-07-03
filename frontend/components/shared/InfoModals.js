@@ -60,7 +60,7 @@ export function openAboutModal() {
         <span class="about-step-num">3</span>
         <div>
           <strong>Submit content, get verdicts</strong>
-          <p>Each rule comes back as no violation, possible violation, or clear violation.</p>
+          <p>Each rule comes back as no violation, possible violation, or clear violation — color-coded so you can scan results at a glance.</p>
         </div>
       </div>
     </div>
@@ -68,6 +68,16 @@ export function openAboutModal() {
     <p class="about-footer-note">© Built by Mohamed Farouk</p>
     `,
     "about-modal"
+  );
+}
+
+export function openApiModal() {
+  openModal(
+    "Jury API",
+    `
+    <p class="about-lead">SDK Coming Soon</p>
+    `,
+    "api-modal"
   );
 }
 
@@ -102,14 +112,17 @@ export function openContactModal() {
 }
 
 /**
- * Renders a small "About · Contact" footer into the given container.
+ * Renders a small "API · About · Contact" footer into the given container.
  */
 export function renderInfoFooter(container) {
   container.innerHTML = `
+    <button class="info-link" id="api-link" type="button">API</button>
+    <span class="info-sep">·</span>
     <button class="info-link" id="about-link" type="button">About</button>
     <span class="info-sep">·</span>
     <button class="info-link" id="contact-link" type="button">Contact</button>
   `;
+  container.querySelector("#api-link").addEventListener("click", openApiModal);
   container.querySelector("#about-link").addEventListener("click", openAboutModal);
   container.querySelector("#contact-link").addEventListener("click", openContactModal);
 }
