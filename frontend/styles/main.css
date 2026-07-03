@@ -17,6 +17,8 @@
   --yellow-bg: rgba(234,179,8,.12);
   --red:    #ef4444;
   --red-bg: rgba(239,68,68,.12);
+  --purple: #a855f7;
+  --purple-bg: rgba(168,85,247,.12);
 
   --radius: 8px;
   --radius-lg: 12px;
@@ -67,7 +69,21 @@ label { display: flex; flex-direction: column; gap: .35rem; font-size: .85rem; f
 
 .form-row  { display: flex; gap: .5rem; align-items: center; }
 .form-error { font-size: .8rem; color: var(--red); margin-top: .25rem; }
+.form-hint { font-size: .78rem; margin-top: .25rem; transition: color .15s; }
+.form-hint.hint-success { color: var(--green); }
+.form-hint.hint-error { color: var(--red); }
 .hidden    { display: none !important; }
+
+.password-field { position: relative; display: flex; }
+.password-field input { padding-right: 2.4rem; }
+.eye-toggle {
+  position: absolute; right: .4rem; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; color: var(--text-muted);
+  padding: .3rem; display: flex; align-items: center; justify-content: center;
+  border-radius: 4px; transition: color .15s;
+}
+.eye-toggle svg { width: 17px; height: 17px; }
+.eye-toggle:hover { color: var(--text); }
 
 /* ── Auth ───────────────────────────────────────────────────────────────────── */
 .auth-container {
@@ -120,6 +136,11 @@ label { display: flex; flex-direction: column; gap: .35rem; font-size: .85rem; f
 .topbar-brand { display: flex; align-items: center; gap: .5rem; }
 .topbar-right { display: flex; align-items: center; gap: 1rem; }
 .brand-name   { font-weight: 700; font-size: .95rem; letter-spacing: -.25px; }
+.username-badge {
+  font-size: .8rem; font-weight: 600; color: var(--accent-h);
+  background: var(--surface-2); border: 1px solid var(--border);
+  padding: .25rem .65rem; border-radius: 999px;
+}
 
 .dashboard-body { display: flex; flex: 1; overflow: hidden; }
 
@@ -134,15 +155,23 @@ label { display: flex; flex-direction: column; gap: .35rem; font-size: .85rem; f
 
 .policy-list { list-style: none; display: flex; flex-direction: column; gap: .25rem; }
 .policy-item {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; flex-direction: column; gap: .35rem;
   padding: .45rem .6rem; border-radius: var(--radius); cursor: pointer;
   transition: background .15s; border: 1px solid transparent;
 }
+.policy-item-row { display: flex; align-items: center; justify-content: space-between; }
 .policy-item:hover { background: var(--surface-2); }
 .policy-item.active { background: var(--surface-2); border-color: var(--accent); }
 .policy-name { font-size: .85rem; font-weight: 500; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .policy-item .delete-policy-btn { opacity: 0; }
 .policy-item:hover .delete-policy-btn { opacity: .6; }
+
+.policy-rules-link {
+  display: none; /* only meaningful on mobile, where the rules panel is a drawer */
+  align-self: flex-start; background: var(--accent); color: #fff; border: none;
+  font-size: .75rem; font-weight: 600; padding: .3rem .6rem; border-radius: 999px;
+  cursor: pointer;
+}
 
 .new-policy-form { margin-top: 1rem; display: flex; flex-direction: column; gap: .5rem; padding-top: .75rem; border-top: 1px solid var(--border); }
 
@@ -181,6 +210,7 @@ label { display: flex; flex-direction: column; gap: .35rem; font-size: .85rem; f
 .content-box.verdict-green  { border-color: var(--green);  background: var(--green-bg); }
 .content-box.verdict-yellow { border-color: var(--yellow); background: var(--yellow-bg); }
 .content-box.verdict-red    { border-color: var(--red);    background: var(--red-bg); }
+.content-box.verdict-error  { border-color: var(--purple); background: var(--purple-bg); }
 
 .content-box-body { display: flex; flex-direction: column; gap: .5rem; }
 .content-text { color: var(--text); font-size: .875rem; white-space: pre-wrap; word-break: break-word; }
@@ -195,6 +225,7 @@ label { display: flex; flex-direction: column; gap: .35rem; font-size: .85rem; f
 .badge-green   { background: var(--green-bg);  color: var(--green); }
 .badge-yellow  { background: var(--yellow-bg); color: var(--yellow); }
 .badge-red     { background: var(--red-bg);    color: var(--red); }
+.badge-error   { background: var(--purple-bg); color: var(--purple); }
 
 /* ── Rules panel ────────────────────────────────────────────────────────────── */
 .rules-panel {
@@ -250,6 +281,13 @@ label { display: flex; flex-direction: column; gap: .35rem; font-size: .85rem; f
 
 .verdict-details { font-size: .85rem; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: .85rem; }
 .verdict-details strong { color: var(--text); }
+
+.verdict-error-box {
+  background: var(--purple-bg); border: 1px solid var(--purple); border-radius: var(--radius);
+  padding: .85rem 1rem; display: flex; flex-direction: column; gap: .35rem;
+}
+.verdict-error-box strong { color: var(--purple); font-size: .9rem; }
+.verdict-error-box p { color: var(--text); font-size: .85rem; }
 
 /* ── About / Contact modals ────────────────────────────────────────────────── */
 .about-lead { color: var(--text-muted); font-size: .875rem; line-height: 1.6; }
@@ -313,6 +351,9 @@ label { display: flex; flex-direction: column; gap: .35rem; font-size: .85rem; f
   .topbar-right { gap: .5rem; }
   .brand-name { display: none; } /* logo icon alone is enough on small screens */
   .info-footer-inline .info-link { font-size: .72rem; }
+  .username-badge { font-size: .72rem; padding: .2rem .5rem; }
+
+  .policy-rules-link { display: inline-flex; align-items: center; }
 
   .dashboard-body { position: relative; overflow: visible; }
 

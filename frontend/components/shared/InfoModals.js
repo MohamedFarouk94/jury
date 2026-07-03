@@ -65,7 +65,7 @@ export function openAboutModal() {
       </div>
     </div>
 
-    <p class="about-footer-note">Built by Mohamed Farouk</p>
+    <p class="about-footer-note">© Built by Mohamed Farouk</p>
     `,
     "about-modal"
   );

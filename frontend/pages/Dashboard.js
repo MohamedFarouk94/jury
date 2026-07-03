@@ -1,4 +1,4 @@
-import { logout, fetchPolicy } from "../services/api.js";
+import { logout, fetchPolicy, getCurrentUsername } from "../services/api.js";
 import { renderPoliciesSidebar } from "../components/policies/PoliciesSidebar.js";
 import { renderRulesPanel } from "../components/policies/RulesPanel.js";
 import { renderContentFeed } from "../components/content/ContentFeed.js";
@@ -6,6 +6,8 @@ import { renderInfoFooter } from "../components/shared/InfoModals.js";
 
 export async function renderDashboard(onLogout) {
   const app = document.getElementById("app");
+  const username = getCurrentUsername();
+
   app.innerHTML = `
     <div class="dashboard">
       <header class="topbar">
@@ -15,7 +17,7 @@ export async function renderDashboard(onLogout) {
           <span class="brand-name">Jury</span>
         </div>
         <div class="topbar-right">
-          <button class="mobile-toggle" id="rules-toggle" aria-label="Toggle rules">📋</button>
+          ${username ? `<span class="username-badge" title="Logged in as ${username}">@${username}</span>` : ""}
           <div class="info-footer info-footer-inline" id="topbar-info-footer"></div>
           <button class="btn btn-ghost btn-sm" id="logout-btn">Log out</button>
         </div>
@@ -45,16 +47,24 @@ export async function renderDashboard(onLogout) {
   renderInfoFooter(document.getElementById("topbar-info-footer"));
 
   // ── Mobile drawer toggles ──────────────────────────────────────────────────
+  // The Policies drawer still has its own topbar button (☰). The Rules drawer
+  // has no topbar button anymore — it's opened contextually from underneath
+  // whichever policy is currently selected, inside the sidebar itself.
   const sidebarEl = document.getElementById("sidebar");
   const rulesPanelEl = document.getElementById("rules-panel");
   const backdrop = document.getElementById("panel-backdrop");
   const sidebarToggleBtn = document.getElementById("sidebar-toggle");
-  const rulesToggleBtn = document.getElementById("rules-toggle");
 
   function closePanels() {
     sidebarEl.classList.remove("open");
     rulesPanelEl.classList.remove("open");
     backdrop.classList.remove("visible");
+  }
+
+  function openRulesPanel() {
+    closePanels();
+    rulesPanelEl.classList.add("open");
+    backdrop.classList.add("visible");
   }
 
   sidebarToggleBtn.addEventListener("click", () => {
@@ -66,16 +76,11 @@ export async function renderDashboard(onLogout) {
     }
   });
 
-  rulesToggleBtn.addEventListener("click", () => {
-    const willOpen = !rulesPanelEl.classList.contains("open");
-    closePanels();
-    if (willOpen) {
-      rulesPanelEl.classList.add("open");
-      backdrop.classList.add("visible");
-    }
-  });
-
   backdrop.addEventListener("click", closePanels);
+
+  // PoliciesSidebar dispatches this when the user taps the "Rules" link
+  // nested under the currently-selected policy (mobile only).
+  window.addEventListener("jury:open-rules", openRulesPanel);
 
   let feedHandle = null;
 

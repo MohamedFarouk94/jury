@@ -21,6 +21,7 @@ async function request(path, options = {}) {
   if (!res.ok) {
   if (res.status === 401) {
     localStorage.removeItem("jury_token");
+    localStorage.removeItem("jury_username");
     window.location.reload();
   }
   const err = await res.json().catch(() => ({ detail: "Unknown error" }));
@@ -46,11 +47,19 @@ export async function login(username, password) {
     body: JSON.stringify({ username, password }),
   });
   localStorage.setItem("jury_token", data.access_token);
+  // We already know the username that was used to authenticate — store it
+  // so the UI can display "@username" without needing a separate /me call.
+  localStorage.setItem("jury_username", username);
   return data;
+}
+
+export function getCurrentUsername() {
+  return localStorage.getItem("jury_username");
 }
 
 export function logout() {
   localStorage.removeItem("jury_token");
+  localStorage.removeItem("jury_username");
 }
 
 // ── Policies ─────────────────────────────────────────────────────────────────

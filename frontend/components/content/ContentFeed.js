@@ -5,6 +5,8 @@ export async function renderContentFeed(container, policy, getRules) {
   let contents = await fetchContents(policy.id);
 
   let pollInterval = null;
+  const fetchFailures = new Map(); // content id -> consecutive failure count
+  const MAX_FETCH_FAILURES = 5;
 
   function hasPending() {
     return contents.some((c) => c.verdict === null);
@@ -22,9 +24,25 @@ export async function renderContentFeed(container, policy, getRules) {
       for (const c of pending) {
         const updated = await fetchContent(c.id).catch(() => null);
         if (updated && updated.verdict !== null) {
+          fetchFailures.delete(c.id);
           const idx = contents.findIndex((x) => x.id === c.id);
           if (idx !== -1) contents[idx] = updated;
           updateContentBox(updated);
+        } else if (!updated) {
+          // Network/API failure fetching this content's status — track it
+          // rather than polling forever with no feedback to the user.
+          const failures = (fetchFailures.get(c.id) || 0) + 1;
+          fetchFailures.set(c.id, failures);
+          if (failures >= MAX_FETCH_FAILURES) {
+            fetchFailures.delete(c.id);
+            const errored = {
+              ...c,
+              verdict: { error: "fetch_failed", details: "Couldn't reach the server to retrieve this verdict. It may still complete — try refreshing later." },
+            };
+            const idx = contents.findIndex((x) => x.id === c.id);
+            if (idx !== -1) contents[idx] = errored;
+            updateContentBox(errored);
+          }
         }
       }
     }, 3000);
@@ -47,7 +65,7 @@ export async function renderContentFeed(container, policy, getRules) {
  
 
   function colorLabel(color) {
-    return { green: "Compliant", yellow: "Review needed", red: "Violation", pending: "Pending…" }[color] || "";
+    return { green: "Compliant", yellow: "Review needed", red: "Violation", error: "Error", pending: "Pending…" }[color] || "";
   }
 
   function openVerdictModal(content) {
@@ -57,6 +75,27 @@ export async function renderContentFeed(container, policy, getRules) {
 
     const overlay = document.createElement("div");
     overlay.className = "modal-overlay";
+
+    if (verdict.error) {
+      overlay.innerHTML = `
+        <div class="modal">
+          <div class="modal-header">
+            <h3>Verdict Unavailable</h3>
+            <button class="btn-icon modal-close">✕</button>
+          </div>
+          <div class="modal-content">
+            <div class="content-preview">${escapeHtml(content.text)}</div>
+            <div class="verdict-error-box">
+              <strong>⚠ Moderation failed</strong>
+              <p>${escapeHtml(verdict.details || "The AI moderation service was unable to process this content.")}</p>
+            </div>
+          </div>
+        </div>`;
+      overlay.querySelector(".modal-close").addEventListener("click", () => overlay.remove());
+      overlay.addEventListener("click", (e) => { if (e.target === overlay) overlay.remove(); });
+      document.body.appendChild(overlay);
+      return;
+    }
 
     const ruleRows = rules
       .map((r) => {

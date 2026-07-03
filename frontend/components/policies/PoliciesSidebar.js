@@ -2,6 +2,7 @@ import { fetchPolicies, createPolicy, deletePolicy } from "../../services/api.js
 
 export async function renderPoliciesSidebar(container, onSelectPolicy) {
   let policies = await fetchPolicies();
+  let selectedId = null;
 
   function render() {
     container.innerHTML = `
@@ -14,13 +15,21 @@ export async function renderPoliciesSidebar(container, onSelectPolicy) {
           policies.length === 0
             ? `<li class="empty-hint">No policies yet.</li>`
             : policies
-                .map(
-                  (p) => `
-          <li class="policy-item" data-id="${p.id}">
-            <span class="policy-name">${escapeHtml(p.name)}</span>
-            <button class="btn-icon delete-policy-btn" data-id="${p.id}" title="Delete policy">🗑</button>
-          </li>`
-                )
+                .map((p) => {
+                  const isActive = p.id === selectedId;
+                  return `
+          <li class="policy-item ${isActive ? "active" : ""}" data-id="${p.id}">
+            <div class="policy-item-row">
+              <span class="policy-name">${escapeHtml(p.name)}</span>
+              <button class="btn-icon delete-policy-btn" data-id="${p.id}" title="Delete policy">🗑</button>
+            </div>
+            ${
+              isActive
+                ? `<button type="button" class="policy-rules-link" data-id="${p.id}">📋 Rules</button>`
+                : ""
+            }
+          </li>`;
+                })
                 .join("")
         }
       </ul>
@@ -63,12 +72,24 @@ export async function renderPoliciesSidebar(container, onSelectPolicy) {
       }
     });
 
+    container.querySelectorAll(".policy-rules-link").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        // Tells Dashboard.js to slide open the rules drawer (mobile only —
+        // on desktop the rules panel is already permanently visible).
+        window.dispatchEvent(new CustomEvent("jury:open-rules"));
+      });
+    });
+
     container.querySelectorAll(".policy-item").forEach((item) => {
       item.addEventListener("click", (e) => {
         if (e.target.closest(".delete-policy-btn")) return;
-        container.querySelectorAll(".policy-item").forEach((el) => el.classList.remove("active"));
-        item.classList.add("active");
-        onSelectPolicy(Number(item.dataset.id));
+        if (e.target.closest(".policy-rules-link")) return;
+        const id = Number(item.dataset.id);
+        if (id === selectedId) return; // already selected, nothing to do
+        selectedId = id;
+        render();
+        onSelectPolicy(id);
       });
     });
 
@@ -79,6 +100,7 @@ export async function renderPoliciesSidebar(container, onSelectPolicy) {
         if (!confirm("Delete this policy and all its rules and content?")) return;
         await deletePolicy(id);
         policies = policies.filter((p) => p.id !== id);
+        if (selectedId === id) selectedId = null;
         render();
         onSelectPolicy(null);
       });
