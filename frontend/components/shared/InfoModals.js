@@ -103,7 +103,7 @@ export function openContactModal() {
   openModal(
     "Get in touch",
     `
-    <p class="about-lead">For business, questions, or even general discussion, reach out anywhere below.</p>
+    <p class="about-lead">Hi! My name is Mohamed Farouk. I'm an AI engineer, NLP specialist, and CS researcher.<br>For business, questions, or even general discussion, reach out anywhere below.</p>
     <div class="contact-row">${rows}</div>
     <p class="about-footer-note">Don't hesitate to contact me!</p>
     `,
