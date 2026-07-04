@@ -6,7 +6,7 @@ import os
 
 load_dotenv()
 
-DAILY_CHECK_LIMIT = int(os.getenv("DAILY_CHECK_LIMIT", "10"))
+DAILY_CHECK_LIMIT = 5
 
 # Comma-separated usernames in .env that are exempt from the quota
 _raw_exempt = os.getenv("EXEMPT_USERS", "")
@@ -18,6 +18,10 @@ def check_and_increment_quota(user, db: Session):
     Raises HTTP 429 if the user has hit their daily check limit.
     Exempt users (listed in EXEMPT_USERS env var) are never limited.
     Resets the counter automatically at the start of a new day.
+
+    Applied per-user, not per-credential: this same check runs whether the
+    request came in via a JWT-authenticated session or an API key, so a user
+    can't get around their limit by creating more API keys.
     """
     if user.username in EXEMPT_USERS:
         return

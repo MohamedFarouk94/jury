@@ -9,12 +9,26 @@ from utils.auth import get_current_user
 router = APIRouter(prefix="/policies", tags=["Policies"])
 
 
+def check_policy_name_conflict(owner_id: int, name: str, db: Session, exclude_policy_id: int = None):
+    """Raise 409 if this owner already has a policy with this name."""
+    query = db.query(Policy).filter(Policy.owner_id == owner_id, Policy.name == name)
+    if exclude_policy_id:
+        query = query.filter(Policy.id != exclude_policy_id)
+    if query.first():
+        raise HTTPException(
+            status_code=409,
+            detail=f"You already have a policy named '{name}'."
+        )
+
+
 @router.post("/", response_model=PolicyOut, status_code=status.HTTP_201_CREATED)
 def create_policy(
     payload: PolicyCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    check_policy_name_conflict(current_user.id, payload.name, db)
+
     policy = Policy(
         name=payload.name,
         description=payload.description,

@@ -9,11 +9,11 @@ from models.database import engine
 from models import Base
 
 # Import all models so SQLAlchemy registers them before create_all
-from models.models import User, Policy, Rule, Content  # noqa: F401
+from models.models import User, Policy, Rule, Content, ApiKey  # noqa: F401
 
 Base.metadata.create_all(bind=engine)
 
-from routes import auth_router, policies_router, rules_router, contents_router
+from routes import auth_router, policies_router, rules_router, contents_router, api_keys_router
 
 app = FastAPI(
     title="Jury API",
@@ -34,14 +34,11 @@ app.add_middleware(
 )
 
 # ── Routers ───────────────────────────────────────────────────────────────────
-# app.include_router(auth_router)
-# app.include_router(policies_router)
-# app.include_router(rules_router)
-# app.include_router(contents_router)
 app.include_router(auth_router, prefix="/api")
 app.include_router(policies_router, prefix="/api")
 app.include_router(rules_router, prefix="/api")
 app.include_router(contents_router, prefix="/api")
+app.include_router(api_keys_router, prefix="/api")
 
 @app.get("/", tags=["Health"])
 def health_check():
