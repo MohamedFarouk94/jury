@@ -13,12 +13,12 @@ export async function renderDashboard(onLogout) {
       <header class="topbar">
         <button class="mobile-toggle" id="sidebar-toggle" aria-label="Toggle policies">☰</button>
         <div class="topbar-brand">
-          <span class="logo-icon">⚖️</span>
+          <img src="assets/logo.jpg" alt="Jury logo" class="logo-img" />
           <span class="brand-name">Jury</span>
+          ${username ? `<span class="username-badge" title="Logged in as ${username}">@${username}</span>` : ""}
         </div>
         <div class="topbar-right">
           <div class="info-footer info-footer-inline" id="topbar-info-footer"></div>
-          ${username ? `<span class="username-badge" title="Logged in as ${username}">@${username}</span>` : ""}
           <button class="btn btn-ghost btn-sm" id="logout-btn">Log out</button>
         </div>
       </header>

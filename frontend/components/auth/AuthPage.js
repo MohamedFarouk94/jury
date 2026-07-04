@@ -14,7 +14,7 @@ export function renderAuthPage(onSuccess) {
   container.innerHTML = `
     <div class="auth-box">
       <div class="auth-logo">
-        <span class="logo-icon">⚖️</span>
+        <img src="assets/logo.jpg" alt="Jury logo" class="logo-img" />
         <h1>Jury</h1>
         <p class="auth-tagline">AI-powered content moderation</p>
         <p class="auth-blurb">Set up rules, submit content, and get instant AI-reviewed verdicts.</p>
@@ -68,7 +68,8 @@ export function renderAuthPage(onSuccess) {
   `;
 
   app.appendChild(container);
-  renderInfoFooter(container.querySelector("#info-footer"));
+  // No API key management before login — that lives in the dashboard only.
+  renderInfoFooter(container.querySelector("#info-footer"), { showApi: false });
 
   const tabs = container.querySelectorAll(".tab-btn");
   const loginForm = container.querySelector("#login-form");

@@ -1,5 +1,8 @@
-// Shared About / Contact modals — used from both AuthPage and Dashboard
-// so they're reachable whether you're logged in or not.
+// Shared About / Contact / API-key modals — used from both AuthPage and
+// Dashboard so About/Contact are reachable whether you're logged in or not.
+// The API modal is only ever wired up from the Dashboard (it requires auth).
+
+import { fetchApiKeys, createApiKey, revokeApiKey } from "../../services/api.js";
 
 // Minimal line-style SVG icons (24x24, currentColor) — no external requests needed.
 const ICONS = {
@@ -29,6 +32,11 @@ function openModal(title, bodyHtml, extraClass = "") {
     if (e.key === "Escape") { overlay.remove(); document.removeEventListener("keydown", onEsc); }
   });
   document.body.appendChild(overlay);
+  return overlay;
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 export function openAboutModal() {
@@ -72,13 +80,118 @@ export function openAboutModal() {
 }
 
 export function openApiModal() {
-  openModal(
-    "Jury API",
-    `
-    <p class="about-lead">SDK Coming Soon</p>
-    `,
-    "api-modal"
-  );
+  const bodyHtml = `
+    <p class="about-lead">Create API keys to access Jury programmatically. Each key is shown in full only once, right after you create it — store it somewhere safe.</p>
+    <div id="api-key-created-box"></div>
+    <div class="api-key-create-row">
+      <input type="text" id="api-key-name-input" placeholder="Key name (optional)" maxlength="100" />
+      <button class="btn btn-sm btn-primary" id="create-api-key-btn">+ Create key</button>
+    </div>
+    <p id="api-key-error" class="form-error hidden"></p>
+    <ul class="api-keys-list" id="api-keys-list">
+      <li class="empty-hint">Loading keys…</li>
+    </ul>
+  `;
+
+  const overlay = openModal("API Keys", bodyHtml, "api-modal");
+  const content = overlay.querySelector(".modal-content");
+  const listEl = content.querySelector("#api-keys-list");
+  const errEl = content.querySelector("#api-key-error");
+  const createdBox = content.querySelector("#api-key-created-box");
+  const nameInput = content.querySelector("#api-key-name-input");
+  const createBtn = content.querySelector("#create-api-key-btn");
+
+  function showError(msg) {
+    errEl.textContent = msg;
+    errEl.classList.remove("hidden");
+  }
+
+  function clearError() {
+    errEl.classList.add("hidden");
+    errEl.textContent = "";
+  }
+
+  function renderKeys(keys) {
+    if (keys.length === 0) {
+      listEl.innerHTML = `<li class="empty-hint">No API keys yet.</li>`;
+      return;
+    }
+    listEl.innerHTML = keys
+      .map((k) => {
+        const created = new Date(k.created_at).toLocaleDateString();
+        const lastUsed = k.last_used_at ? new Date(k.last_used_at).toLocaleString() : "Never used";
+        return `
+        <li class="api-key-item ${k.revoked ? "revoked" : ""}" data-id="${k.id}">
+          <div class="api-key-info">
+            <strong>${escapeHtml(k.name || "Unnamed key")}</strong>
+            <code class="api-key-prefix">${escapeHtml(k.prefix)}••••••••</code>
+            <span class="api-key-meta">Created ${created} · ${k.revoked ? "Revoked" : lastUsed}</span>
+          </div>
+          ${!k.revoked ? `<button class="btn-icon revoke-api-key-btn" data-id="${k.id}" title="Revoke key">🗑</button>` : ""}
+        </li>`;
+      })
+      .join("");
+
+    listEl.querySelectorAll(".revoke-api-key-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = Number(btn.dataset.id);
+        if (!confirm("Revoke this API key? Anything using it will stop working immediately.")) return;
+        clearError();
+        try {
+          await revokeApiKey(id);
+          await loadKeys();
+        } catch (err) {
+          showError(err.message);
+        }
+      });
+    });
+  }
+
+  async function loadKeys() {
+    try {
+      const keys = await fetchApiKeys();
+      renderKeys(keys);
+    } catch (err) {
+      listEl.innerHTML = `<li class="empty-hint">Failed to load keys.</li>`;
+      showError(err.message);
+    }
+  }
+
+  createBtn.addEventListener("click", async () => {
+    clearError();
+    createBtn.disabled = true;
+    try {
+      const name = nameInput.value.trim();
+      const created = await createApiKey(name);
+      nameInput.value = "";
+      createdBox.innerHTML = `
+        <div class="api-key-created-box">
+          <strong>⚠ Copy this key now — it won't be shown again</strong>
+          <div class="api-key-secret-row">
+            <code class="api-key-secret">${escapeHtml(created.key)}</code>
+            <button class="btn btn-sm btn-outline" id="copy-api-key-btn">Copy</button>
+          </div>
+        </div>`;
+      const copyBtn = createdBox.querySelector("#copy-api-key-btn");
+      copyBtn.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(created.key);
+          copyBtn.textContent = "Copied!";
+          setTimeout(() => { copyBtn.textContent = "Copy"; }, 1500);
+        } catch {
+          // Clipboard API can fail (e.g. insecure context) — the key is
+          // still visible on screen for manual copying.
+        }
+      });
+      await loadKeys();
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      createBtn.disabled = false;
+    }
+  });
+
+  loadKeys();
 }
 
 export function openContactModal() {
@@ -113,16 +226,19 @@ export function openContactModal() {
 
 /**
  * Renders a small "API · About · Contact" footer into the given container.
+ * Pass { showApi: false } to omit the API tab — used on the logged-out
+ * auth page, since key management requires an authenticated user.
  */
-export function renderInfoFooter(container) {
+export function renderInfoFooter(container, { showApi = true } = {}) {
   container.innerHTML = `
-    <button class="info-link" id="api-link" type="button">API</button>
-    <span class="info-sep">·</span>
+    ${showApi ? `<button class="info-link" id="api-link" type="button">API</button><span class="info-sep">·</span>` : ""}
     <button class="info-link" id="about-link" type="button">About</button>
     <span class="info-sep">·</span>
     <button class="info-link" id="contact-link" type="button">Contact</button>
   `;
-  container.querySelector("#api-link").addEventListener("click", openApiModal);
+  if (showApi) {
+    container.querySelector("#api-link").addEventListener("click", openApiModal);
+  }
   container.querySelector("#about-link").addEventListener("click", openAboutModal);
   container.querySelector("#contact-link").addEventListener("click", openContactModal);
 }

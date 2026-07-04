@@ -4,6 +4,23 @@ function getToken() {
   return localStorage.getItem("jury_token");
 }
 
+// FastAPI error bodies aren't always a plain string — pydantic validation
+// errors send `detail` as an array of {loc, msg, type} objects, and some
+// custom errors send a single object. Turn any of these into a readable
+// string instead of letting them stringify to "[object Object]".
+function extractErrorMessage(err) {
+  const detail = err?.detail;
+  if (!detail) return "Request failed";
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((d) => (typeof d === "string" ? d : d.msg || JSON.stringify(d)))
+      .join(" ");
+  }
+  if (typeof detail === "object") return detail.msg || JSON.stringify(detail);
+  return "Request failed";
+}
+
 async function request(path, options = {}) {
   const token = getToken();
   const headers = {
@@ -25,7 +42,7 @@ async function request(path, options = {}) {
     window.location.reload();
   }
   const err = await res.json().catch(() => ({ detail: "Unknown error" }));
-  throw new Error(err.detail || "Request failed");
+  throw new Error(extractErrorMessage(err));
 }
 
   if (res.status === 204) return null;
@@ -118,4 +135,21 @@ export async function fetchContents(policyId) {
 
 export async function fetchContent(contentId) {
   return request(`/contents/${contentId}`);
+}
+
+// ── API Keys ──────────────────────────────────────────────────────────────────
+
+export async function fetchApiKeys() {
+  return request("/api-keys/");
+}
+
+export async function createApiKey(name) {
+  return request("/api-keys/", {
+    method: "POST",
+    body: JSON.stringify({ name: name || null }),
+  });
+}
+
+export async function revokeApiKey(id) {
+  return request(`/api-keys/${id}`, { method: "DELETE" });
 }

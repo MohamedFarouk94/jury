@@ -101,6 +101,10 @@ label { display: flex; flex-direction: column; gap: .35rem; font-size: .85rem; f
 
 .auth-logo { text-align: center; display: flex; flex-direction: column; align-items: center; gap: .4rem; }
 .logo-icon { font-size: 2.25rem; }
+.logo-img {
+  width: 7.25rem; height: 7.25rem; border-radius: 50%;
+  object-fit: cover; display: block; flex-shrink: 0;
+}
 .auth-logo h1 { font-size: 1.5rem; }
 .auth-tagline { font-size: .8rem; color: var(--text-muted); }
 .auth-blurb { font-size: .78rem; color: var(--text-muted); max-width: 300px; line-height: 1.5; }
@@ -313,6 +317,34 @@ label { display: flex; flex-direction: column; gap: .35rem; font-size: .85rem; f
 }
 .contact-icon-link svg { width: 19px; height: 19px; }
 .contact-icon-link:hover { color: var(--accent-h); border-color: var(--accent); transform: translateY(-2px); }
+
+/* ── API Keys ───────────────────────────────────────────────────────────────── */
+.api-key-create-row { display: flex; gap: .5rem; }
+.api-key-create-row input { flex: 1; }
+
+.api-keys-list { list-style: none; display: flex; flex-direction: column; gap: .5rem; }
+.api-key-item {
+  display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+  padding: .65rem .75rem; border-radius: var(--radius);
+  background: var(--surface-2); border: 1px solid var(--border);
+}
+.api-key-item.revoked { opacity: .5; }
+.api-key-info { display: flex; flex-direction: column; gap: .2rem; min-width: 0; }
+.api-key-info strong { font-size: .85rem; }
+.api-key-prefix { font-family: var(--mono); font-size: .78rem; color: var(--text-muted); }
+.api-key-meta { font-size: .72rem; color: var(--text-muted); }
+
+.api-key-created-box {
+  background: var(--yellow-bg); border: 1px solid var(--yellow); border-radius: var(--radius);
+  padding: .75rem 1rem; display: flex; flex-direction: column; gap: .5rem;
+}
+.api-key-created-box strong { color: var(--yellow); font-size: .82rem; }
+.api-key-secret-row { display: flex; gap: .5rem; align-items: center; }
+.api-key-secret {
+  flex: 1; font-family: var(--mono); font-size: .8rem; background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: var(--radius); padding: .4rem .6rem;
+  overflow-x: auto; white-space: nowrap; color: var(--text);
+}
 
 /* ── Empty / loading states ─────────────────────────────────────────────────── */
 .empty-state {
