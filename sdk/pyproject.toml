@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "twelveangrymen"
+version = "0.1.0"
+description = "Python SDK for Jury -- AI-powered content moderation."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "httpx>=0.27",
+    "pydantic>=2.0",
+    "rich>=13.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["twelveangrymen*"]
