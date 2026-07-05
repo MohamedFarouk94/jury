@@ -398,6 +398,11 @@ class Policy(_TombstoneGuard):
             return content_obj
         return content_obj.wait(timeout=timeout, poll_interval=poll_interval)
 
+    def summary(self) -> None:
+        """Pretty-print this policy and its rules. Prints; returns None."""
+        from ._render import render_policy_summary
+        render_policy_summary(self)
+
     def past_verdicts(self, *, include_pending: bool = False):
         """
         Return this policy's resolved verdicts as a list of Verdict objects,

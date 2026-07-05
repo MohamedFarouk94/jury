@@ -2,7 +2,7 @@
 
 Python SDK for [Jury](https://mfarouk-jury-backend.hf.space) — AI-powered content moderation.
 
-Not published to PyPI; install directly from GitHub.
+Install directly from GitHub.
 
 ## Install
 
