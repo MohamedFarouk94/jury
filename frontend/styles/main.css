@@ -105,6 +105,8 @@ label { display: flex; flex-direction: column; gap: .35rem; font-size: .85rem; f
   width: 2.25rem; height: 2.25rem; border-radius: 50%;
   object-fit: cover; display: block; flex-shrink: 0;
 }
+/* Auth page only — topbar keeps the smaller default size above */
+.logo-img-lg { width: 7rem; height: 7rem; }
 .auth-logo h1 { font-size: 1.5rem; }
 .auth-tagline { font-size: .8rem; color: var(--text-muted); }
 .auth-blurb { font-size: .78rem; color: var(--text-muted); max-width: 300px; line-height: 1.5; }

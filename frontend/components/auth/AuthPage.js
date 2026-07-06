@@ -14,7 +14,7 @@ export function renderAuthPage(onSuccess) {
   container.innerHTML = `
     <div class="auth-box">
       <div class="auth-logo">
-        <img src="assets/logo.jpg" alt="Jury logo" class="logo-img" />
+        <img src="assets/logo.jpg" alt="Jury logo" class="logo-img logo-img-lg" />
         <h1>Jury</h1>
         <p class="auth-tagline">AI-powered content moderation</p>
         <p class="auth-blurb">Set up rules, submit content, and get instant AI-reviewed verdicts.</p>
