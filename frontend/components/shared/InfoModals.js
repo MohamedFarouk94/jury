@@ -81,7 +81,16 @@ export function openAboutModal() {
 
 export function openApiModal() {
   const bodyHtml = `
-    <p class="about-lead">Create API keys to access Jury programmatically. Each key is shown in full only once, right after you create it — store it somewhere safe.</p>
+    <div class="sdk-intro">
+      <img src="assets/sdk_logo.jpg" alt="twelveangrymen SDK logo" class="sdk-logo-img" />
+      <p class="about-lead">
+        Jury has a Python SDK called
+        <strong>twelveangrymen</strong>.<br>Check out
+        <a href="https://github.com/MohamedFarouk94/jury/tree/master/sdk" target="_blank" rel="noopener noreferrer">the SDK docs on GitHub</a>
+        to see how to use it.
+      </p>
+    </div>
+    <p class="about-lead">Create API keys to access Jury programmatically via <strong>twelveangrymen</strong>. Each key is shown in full only once, right after you create it — store it somewhere safe.</p>
     <div id="api-key-created-box"></div>
     <div class="api-key-create-row">
       <input type="text" id="api-key-name-input" placeholder="Key name (optional)" maxlength="100" />
