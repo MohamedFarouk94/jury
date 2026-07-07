@@ -1,105 +1,170 @@
-# Jury — AI-Powered Content Moderation
+<p align="center">
+  <img src="./frontend/assets/logo.jpg" alt="Jury logo" width="120" />
+</p>
 
-Jury is a full-stack admin tool for moderating social media content using AI. Admins define **policies** made up of **rules**, submit **content** for review, and an LLM (via Groq) returns a structured verdict against each rule. A web dashboard surfaces those verdicts for human review, and a Python SDK / CLI give programmatic access to the same backend.
+<h1 align="center">⚖️ Jury</h1>
+<p align="center"><strong>Define moderation policies in plain English. Get auditable, per-rule AI verdicts — not a black-box boolean.</strong></p>
+
+<p align="center">
+  <img alt="python" src="https://img.shields.io/badge/python-3.10%2B-blue">
+  <img alt="backend" src="https://img.shields.io/badge/backend-FastAPI%20%2B%20LangChain-009688">
+  <img alt="frontend" src="https://img.shields.io/badge/frontend-vanilla%20JS%2C%20zero%20build-f7df1e">
+  <img alt="sdk" src="https://img.shields.io/badge/sdk-twelveangrymen-9cf">
+  <img alt="status" src="https://img.shields.io/badge/status-active--development-yellow">
+</p>
+
+<p align="center">
+  🖥️ <a href="https://jury-livid.vercel.app"><strong>Live app</strong></a> ·
+  📖 <a href="./backend">Backend API</a> ·
+  🌐 <a href="./frontend">Frontend</a> ·
+  📦 <a href="./sdk">Python SDK</a> ·
+  💻 CLI <em>(planned)</em>
+</p>
 
 ---
 
-## Live
+## What is this?
 
-- **Dashboard:** [jury-livid.vercel.app](https://jury-livid.vercel.app)
-- **API:** `https://mfarouk-jury-backend.hf.space` (routes under `/api`)
-- **API docs (Swagger):** `https://mfarouk-jury-backend.hf.space/docs`
-
----
-
-## How it fits together
+Most moderation tools give you a single "is this safe?" boolean. **Jury** doesn't. You write a policy — a plain-English set of rules — and every piece of content is scored **independently against each rule** on a 3-level scale (no violation / possible violation / clear violation). The result is a verdict you can actually audit: which rule triggered, how confidently, and why.
 
 ```
-                 ┌──────────────┐
-                 │   Backend    │  FastAPI · SQLAlchemy · Groq LLM
-                 │ (HF Spaces)  │  auth, policies, rules, content, verdicts
-                 └──────┬───────┘
-                        │  REST API (/api)
-        ┌───────────────┼───────────────┬───────────────┐
-        │               │               │               │
- ┌─────────────┐  ┌────────────┐  ┌───────────┐   ┌────────────┐
- │  Frontend   │  │    SDK     │  │    CLI    │   │  (future)  │
- │  (Vercel)   │  │  (Python)  │  │           │   │  clients   │
- │  Vanilla JS │  │            │  │           │   │            │
- └─────────────┘  └────────────┘  └───────────┘   └────────────┘
+User → Policy → Rule(s)
+              → Content → Verdict
 ```
 
-The **backend** is the single source of truth — everything else is a client of its API. The **frontend** is the human-facing admin dashboard. The **SDK** wraps the API for use in other Python projects/scripts. The **CLI** (built on top of the SDK) is for terminal/scripted workflows — exact scope still TBD.
+| Score | Meaning |
+|---|---|
+| `0` | No violation |
+| `1` | Possible violation (ambiguous) |
+| `2` | Clear violation |
+
+Verdicts roll up into one glance: 🟢 all-clear, 🟡 something ambiguous, 🔴 something clear-cut.
+
+This repo is a **monorepo** containing everything end to end — the API, the web client, and the SDK developers use to talk to it programmatically.
 
 ---
 
-## Repo layout
+## Why this repo is worth a closer look
+
+This isn't a tutorial CRUD app. It's built the way a small production service actually gets built — with the tradeoffs, security hardening, and design deliberation that implies:
+
+- **A real auth model, not just JWTs.** JWTs and hashed, revocable API keys (`jk_...`) share a single `get_current_user` dependency, differentiated by prefix — because JWTs and API keys solve genuinely different problems (session identity vs. programmatic, non-expiring access), and quota is enforced per-user so minting keys can't be used to dodge rate limits. See [Authentication](./backend#authentication).
+- **An SDK designed like an ORM, on paper first.** The [`twelveangrymen`](./sdk) SDK stages changes locally and only hits the network on `.commit()` — a SQLAlchemy-style unit-of-work model, complete with `PartialCommitError` handling for a backend that has no transactional batch endpoint, and tombstoning via `__getattribute__` so a deleted object can never be silently misused.
+- **Security treated as a default, not a checkbox.** No app boot without a `SECRET_KEY`. No plaintext API keys, ever — only SHA-256 hashes. Brute-force lockouts. Correct `401`s instead of leaking `500`s on malformed tokens. Per-owner uniqueness enforced at the database layer, not just in application code.
+- **A framework-free frontend that doesn't feel like one.** The [frontend](./frontend) is plain ES modules and the native DOM — no React, no bundler — yet still ships live polling, optimistic updates, mobile drawer navigation, and a GitHub/Stripe-style "shown once" secrets UX. A demonstration that the fundamentals scale further than people assume.
+- **Design-before-code, consistently.** Each part of this repo — auth strategy, the SDK's error hierarchy, the commit model's conflict semantics — went through multiple rounds of deliberate API-surface design before a line of implementation was written.
+
+If you're a hiring team skimming this: the individual READMEs linked throughout go deep on rationale, not just usage — that's intentional.
+
+---
+
+## Architecture
+
+```
+┌─────────────────────┐        ┌──────────────────────┐
+│   Frontend (SPA)      │        │   Python SDK           │
+│   Vanilla JS, Vercel   │        │   twelveangrymen        │
+└──────────┬───────────┘        └──────────┬───────────┘
+           │                                │
+           │        Authorization: Bearer <JWT | jk_...>
+           └───────────────┬────────────────┘
+                            ▼
+                  ┌───────────────────────┐
+                  │   FastAPI backend       │
+                  │   routes / core / utils │
+                  │   (Hugging Face Spaces) │
+                  └───────────┬────────────┘
+                              │
+                    ┌─────────┴─────────┐
+                    │                    │
+                    ▼                    ▼
+              SQLite (/data)      Groq LLM (via LangChain)
+```
+
+Both the browser frontend and the SDK talk to the **same** backend through the **same** `Authorization: Bearer` header — the server tells credential types apart by a `jk_` prefix, so there's exactly one auth code path to reason about, not two.
+
+---
+
+## Repo structure
 
 ```
 jury/
-├── README.md              ← you are here
-├── backend/                ← FastAPI app — see backend/README.md
-├── frontend/                ← Vanilla JS SPA — see frontend/README.md
-├── sdk/                    ← Python SDK — see sdk/README.md
-└── cli/                    ← CLI — see cli/README.md
+├── backend/     → FastAPI + SQLAlchemy + LangChain API, deployed on Hugging Face Spaces
+├── frontend/    → Vanilla JS SPA, deployed on Vercel
+├── sdk/         → twelveangrymen — the Python client SDK, installable via pip + GitHub
+└── cli/         → (planned) command-line client built on the SDK
 ```
 
-| Part       | Status      | Stack                                      | Docs                            |
-|------------|-------------|---------------------------------------------|----------------------------------|
-| `backend/` | Deployed    | FastAPI, SQLAlchemy, SQLite, LangChain, Groq | [backend/README.md](backend/README.md)   |
-| `frontend/`| Deployed    | Vanilla JS (ES modules), HTML/CSS            | [frontend/README.md](frontend/README.md) |
-| `sdk/`     | Planned     | Python                                       | [sdk/README.md](sdk/README.md)           |
-| `cli/`     | Planned     | TBD                                          | [cli/README.md](cli/README.md)           |
-
-> Note: `backend/README.md` also doubles as the Hugging Face Space card — its YAML frontmatter configures how the Space renders on Hugging Face, in addition to documenting local backend setup.
+| Part | README | Live |
+|---|---|---|
+| Backend | [`backend/README.md`](./backend) | API docs at `/docs` on the deployed Space |
+| Frontend | [`frontend/README.md`](./frontend) | [jury-livid.vercel.app](https://jury-livid.vercel.app) |
+| SDK | [`sdk/README.md`](./sdk) | `pip install "git+https://github.com/MohamedFarouk94/jury.git#subdirectory=sdk"` |
 
 ---
 
-## Quickstart (local dev)
+## Quickstart
 
-Each part has its own setup instructions in its README. At a high level:
+**Run the whole thing locally** — see each README for full detail:
 
 ```bash
-# Backend
-cd backend && python -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
-cp .env.template.txt .env   # fill in GROQ_API_KEY, SECRET_KEY
-uvicorn main:app --reload --port 8000
+git clone https://github.com/MohamedFarouk94/jury.git
+cd jury
 
-# Frontend (separate terminal)
-cd frontend
-python3 -m http.server 5500   # ensure config.js points at http://localhost:8000
+# 1. Backend
+cd backend && pip install -r requirements.txt
+# configure .env (see backend README) then:
+uvicorn main:app --reload --port 7860
+
+# 2. Frontend (in a new terminal)
+cd ../frontend
+python3 -m http.server 5500
+# open http://localhost:5500
+
+# 3. SDK, if you'd rather talk to it programmatically
+pip install "git+https://github.com/MohamedFarouk94/jury.git#subdirectory=sdk"
 ```
 
-See [backend/README.md](backend/README.md) and [frontend/README.md](frontend/README.md) for full details, and [sdk/README.md](sdk/README.md) / [cli/README.md](cli/README.md) once those are built out.
+```python
+import twelveangrymen as jury
+
+client = jury.Jury(api_key="jk_...")
+policy = client.policies.get("Community Guidelines")
+verdict = policy.evaluate("some user-submitted text")
+verdict.summary()
+```
 
 ---
 
-## Core concepts
+## Tech stack
 
-| Concept   | Description |
-|-----------|-------------|
-| **Policy**  | A named collection of moderation rules (e.g. "Community Guidelines") |
-| **Rule**    | A single condition a policy checks for (e.g. "no hate speech") |
-| **Content** | A piece of submitted text/media to be evaluated against a policy |
-| **Verdict** | Per-rule LLM judgment on a piece of content: `0` (no violation), `1` (possible violation), `2` (clear violation) |
+| Layer | Choice |
+|---|---|
+| **Backend** | FastAPI · SQLAlchemy · SQLite · `python-jose` (JWT) · `passlib`/bcrypt · LangChain · Groq (`llama-3.3-70b-versatile`) |
+| **Frontend** | Vanilla JavaScript (ES modules) · plain CSS custom properties · no framework, no bundler |
+| **SDK** | `httpx` (sync, with an async upgrade path already designed in) · `rich` for terminal pretty-printing |
+| **Infrastructure** | Docker on Hugging Face Spaces (with a mounted Storage Bucket for persistence) · Vercel for the frontend |
 
-### Verdict color logic (dashboard)
+---
 
-| Color     | Condition |
-|-----------|-----------|
-| ⬜ Pending | Verdict not yet returned by LLM |
-| 🟣 Purple  | Error happened in moderation chain | 
-| 🟢 Green   | All rules returned `0` |
-| 🟡 Yellow  | No rule returned `2`, but ≥1 returned `1` |
-| 🔴 Red     | At least one rule returned `2` |
+## Engineering principles across the stack
+
+A few things that show up in more than one part of this repo, because they were treated as project-wide defaults rather than one-off choices:
+
+- **The policy owns the rules driving the logic** — `policy.check(content)` everywhere, not `content.check(policy)`, so `Content` stays a plain data object. This shaped the backend's route design and the SDK's method signatures identically.
+- **No silent fallbacks around anything security-sensitive.** Missing `SECRET_KEY` crashes on boot rather than defaulting. API keys are stored hashed, never in retrievable form, in both the backend model and how the SDK is documented to use them.
+- **Explicit over implicit, even when implicit is less code.** Structured logging uses route-level calls instead of middleware so failed logins are attributed correctly *before* auth resolves. The SDK's tombstoning overrides `__getattribute__` directly instead of relying on a boolean flag every method has to remember to check.
+- **Documentation as a design artifact, not an afterthought.** Every README in this repo explains *why*, not just *how* — because the reasoning behind a decision is usually more interesting than the decision itself.
 
 ---
 
 ## Roadmap
 
-- [ ] Verify Hugging Face Spaces persistent storage is enabled (SQLite currently resets on container rebuild)
-- [ ] Richer admin stats (daily check usage, most active users)
-- [ ] Python SDK for programmatic access to the API
-- [ ] CLI (scope TBD)
-- [ ] Possible migration off SQLite to an external database
+- [ ] CLI (`cli/`), built on top of the SDK
+- [ ] Async SDK client (`AsyncJury`) — the `httpx` transport was chosen specifically to make this a non-redesign
+- [ ] Backend route for direct policy-by-name lookup, removing the SDK's current 2-round-trip `get()`
+- [ ] Admin/stats monitoring endpoint
+
+---
+
+<p align="center"><em>Built by <a href="https://github.com/MohamedFarouk94">Mohamed Farouk</a>.</em></p>
