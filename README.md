@@ -147,17 +147,6 @@ verdict.summary()
 
 ---
 
-## Engineering principles across the stack
-
-A few things that show up in more than one part of this repo, because they were treated as project-wide defaults rather than one-off choices:
-
-- **The policy owns the rules driving the logic** — `policy.check(content)` everywhere, not `content.check(policy)`, so `Content` stays a plain data object. This shaped the backend's route design and the SDK's method signatures identically.
-- **No silent fallbacks around anything security-sensitive.** Missing `SECRET_KEY` crashes on boot rather than defaulting. API keys are stored hashed, never in retrievable form, in both the backend model and how the SDK is documented to use them.
-- **Explicit over implicit, even when implicit is less code.** Structured logging uses route-level calls instead of middleware so failed logins are attributed correctly *before* auth resolves. The SDK's tombstoning overrides `__getattribute__` directly instead of relying on a boolean flag every method has to remember to check.
-- **Documentation as a design artifact, not an afterthought.** Every README in this repo explains *why*, not just *how* — because the reasoning behind a decision is usually more interesting than the decision itself.
-
----
-
 ## Roadmap
 
 - [ ] CLI (`cli/`), built on top of the SDK
@@ -167,4 +156,4 @@ A few things that show up in more than one part of this repo, because they were 
 
 ---
 
-<p align="center"><em>Built by <a href="https://github.com/MohamedFarouk94">Mohamed Farouk</a>.</em></p>
+<p align="center"><em>© Built by <a href="https://github.com/MohamedFarouk94">Mohamed Farouk</a>.</em></p>
